@@ -14,6 +14,7 @@ from .elements import (
     Scroll,
     Task,
     TaskList,
+    Text,
     Tree,
     TreeNode,
 )
@@ -28,6 +29,7 @@ __all__ = [
     "Scroll",
     "TaskList",
     "Task",
+    "Text",
     "Tree",
     "TreeNode",
     "Buffer",

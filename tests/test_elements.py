@@ -12,6 +12,7 @@ from elka import (
     Scroll,
     Task,
     TaskList,
+    Text,
     Tree,
     TreeNode,
     keys,
@@ -194,6 +195,59 @@ def test_scroll_preserves_child_styles():
     s.render(buf, Rect(0, 0, 4, 2))
     assert buf.get(0, 0).char == "z"
     assert buf.get(0, 0).style == "\x1b[31m"
+
+
+# -- Text --------------------------------------------------------------------
+def test_text_pull_from_string_splits_lines():
+    buf = render(Text(lambda: "one\ntwo\nthree"), 20, 3)
+    assert [row_text(buf, y) for y in range(3)] == ["one", "two", "three"]
+
+
+def test_text_pull_from_list_of_lines():
+    buf = render(Text(lambda: ["a", "b"]), 20, 2)
+    assert [row_text(buf, y) for y in range(2)] == ["a", "b"]
+
+
+def test_text_push_append_and_set():
+    t = Text()
+    t.append("first")
+    t.append(["second", "third"])
+    buf = render(t, 20, 3)
+    assert [row_text(buf, y) for y in range(3)] == ["first", "second", "third"]
+    t.set("only")
+    buf = render(t, 20, 3)
+    assert [row_text(buf, y) for y in range(3)] == ["only", "", ""]
+
+
+def test_text_delete_last_and_first_clamp():
+    t = Text(text=["a", "b", "c", "d"])
+    t.delete_last(1)
+    t.delete_first(1)
+    assert t._current() == ["b", "c"]
+    t.delete_last(99)          # clamps, empties without error
+    assert t._current() == []
+
+
+def test_text_truncates_long_line_to_width():
+    buf = render(Text(lambda: "abcdefgh"), 4, 1)
+    assert row_text(buf, 0) == "abcd"
+
+
+def test_text_content_height_counts_lines():
+    assert Text(lambda: "a\nb\nc").content_height(20) == 3
+    assert Text(text=["x", "y"]).content_height(20) == 2
+
+
+def test_text_push_methods_raise_with_provider():
+    t = Text(lambda: "held")
+    for call in (lambda: t.set("x"), lambda: t.append("x"),
+                 t.delete_last, t.delete_first):
+        try:
+            call()
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError("expected RuntimeError")
 
 
 # -- keys.parse --------------------------------------------------------------
