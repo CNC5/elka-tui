@@ -20,6 +20,9 @@ register.
   `current` and `total` are set.
 - `Tree(provider)` — `provider() -> TreeNode | list[TreeNode]`, where
   `TreeNode(label, children=[], expanded=True)`.
+- `Text(provider=None, text=None)` — one line of text per row, truncated to the
+  region width. Either **pull** (pass `provider`) or **push** (drive it with
+  method calls). See [Text](#text).
 - `Scroll(child, offset=0)` — a movable vertical window into any element whose
   content is taller than its region. See [Scrolling](#scrolling).
 
@@ -48,6 +51,38 @@ with terminal:                       # alt screen, hidden cursor, raw mode
 (including on Ctrl-C or exceptions). When stdout is not a TTY the terminal
 no-ops so callers can run headless.
 
+## Text
+
+`Text` renders lines of text, one per row. Content is either a single string
+(split on `"\n"`) or a list of lines. It works in one of two mutually exclusive
+modes:
+
+**Pull** — pass a `provider` (`() -> str | list[str]`), re-invoked every frame
+like the other data-driven elements. A constant string or list is also accepted:
+
+```python
+from elka import Text, terminal
+
+status = {"msg": "idle"}
+terminal.attach(Text(lambda: f"status: {status['msg']}"))
+```
+
+**Push** — omit `provider` and drive the content directly. Handy for a log
+where you append as events happen rather than re-deriving the whole view:
+
+```python
+log = Text()                 # push mode
+log.set("first line")        # replace all content (str or list of lines)
+log.append(["line 2", "line 3"])
+log.delete_first(1)          # drop the oldest line
+log.delete_last()            # drop the newest (n=1 by default)
+```
+
+`delete_first`/`delete_last` clamp to the available lines and no-op for `n <= 0`.
+Calling a push method while a `provider` is set raises `RuntimeError`. `Text`
+reports its `content_height`, so it scrolls inside a `Scroll` wrapper like
+`Tree` and `TaskList`.
+
 ## Scrolling
 
 Elements clip to their region and truncate anything past the bottom. Wrap one
@@ -72,7 +107,7 @@ The wrapper owns the scroll position (`log.offset`) and clamps it to the
 child's content every frame, so you never track content height yourself:
 `scroll_by`/`scroll_to` stop at the first and last row, and `page_up`/
 `page_down` move by the visible height. Clamping relies on the child reporting
-its `content_height(width)`; the built-in `Tree` and `TaskList` do. `Scroll`
+its `content_height(width)`; the built-in `Tree`, `TaskList`, and `Text` do. `Scroll`
 nests inside a `HorizontalSplit` pane like any other element.
 
 ## Keyboard input

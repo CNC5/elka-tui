@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "elka"
+version = "0.2.1"
+description = "A small, stdlib-only Python TUI package."
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{ name = "CNC5", email = "github@cnc5.dev" }]
+keywords = ["tui", "terminal", "curses", "ansi", "cli"]
+dependencies = []
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: User Interfaces",
+    "Topic :: Terminals",
+]
+
+[project.urls]
+Homepage = "https://github.com/CNC5/elka-tui"
+Repository = "https://github.com/CNC5/elka-tui"
+
+[tool.hatch.build.targets.wheel]
+packages = ["elka"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/elka", "/tests", "/examples", "/README.md"]
