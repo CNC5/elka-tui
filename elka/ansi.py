@@ -30,3 +30,34 @@ def move(x, y):
 def sgr(*codes):
     """Build an SGR (Select Graphic Rendition) sequence, e.g. ``sgr(1, 31)``."""
     return CSI + ";".join(str(c) for c in codes) + "m"
+
+
+# Colour / style helpers -----------------------------------------------------
+# These return plain SGR strings, so they drop straight into any ``style=``
+# argument (cell styles, ``Task(..., style=...)``, ``TreeNode(..., style=...)``).
+
+# Ready-to-use foreground colours, from the base-8 palette.
+BLACK = sgr(30)
+RED = sgr(31)
+GREEN = sgr(32)
+YELLOW = sgr(33)
+BLUE = sgr(34)
+MAGENTA = sgr(35)
+CYAN = sgr(36)
+WHITE = sgr(37)
+
+# Text attributes.
+BOLD = sgr(1)
+DIM = sgr(2)
+ITALIC = sgr(3)
+UNDERLINE = sgr(4)
+
+
+def fg(code):
+    """256-colour foreground SGR sequence (``code`` in 0-255)."""
+    return sgr(38, 5, code)
+
+
+def bg(code):
+    """256-colour background SGR sequence (``code`` in 0-255)."""
+    return sgr(48, 5, code)

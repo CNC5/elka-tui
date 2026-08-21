@@ -22,7 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from elka import HorizontalSplit, Scroll, Task, TaskList, Tree, TreeNode, terminal
+from elka import HorizontalSplit, Scroll, Task, TaskList, Tree, TreeNode, ansi, terminal
 
 # Mutable state the provider closures read from every frame.
 NAMES = ["build", "test", "package"]
@@ -33,7 +33,10 @@ def tasks():
     rows = []
     for i, name in enumerate(NAMES):
         marker = "> " if i == state["selected"] else "  "
-        rows.append(Task(marker + name, state["progress"][name], 100))
+        progress = state["progress"][name]
+        # Colour by progress: green once complete, yellow while in flight.
+        style = ansi.GREEN if progress >= 100 else ansi.YELLOW if progress else ""
+        rows.append(Task(marker + name, progress, 100, style=style))
     return rows
 
 
@@ -44,10 +47,15 @@ def tree():
         [
             TreeNode(
                 "src",
-                [TreeNode(f"module_{i:02d}.py") for i in range(20)],
+                [TreeNode(f"module_{i:02d}.py", style=ansi.CYAN) for i in range(20)],
+                style=ansi.BOLD,
             ),
-            TreeNode("tests", [TreeNode("test_main.py"), TreeNode("test_util.py")]),
-            TreeNode("README.md"),
+            TreeNode(
+                "tests",
+                [TreeNode("test_main.py"), TreeNode("test_util.py")],
+                style=ansi.BOLD,
+            ),
+            TreeNode("README.md", style=ansi.GREEN),
         ],
     )
 

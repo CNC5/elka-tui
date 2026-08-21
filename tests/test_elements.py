@@ -15,6 +15,7 @@ from elka import (
     Text,
     Tree,
     TreeNode,
+    ansi,
     keys,
 )
 from elka.buffer import Cell
@@ -22,6 +23,10 @@ from elka.buffer import Cell
 
 def row_text(buf, y):
     return "".join(buf.get(x, y).char for x in range(buf.width)).rstrip()
+
+
+def cell_style(buf, x, y):
+    return buf.get(x, y).style
 
 
 def render(element, width, height):
@@ -61,6 +66,12 @@ def test_progress_bar_guards_zero_total():
     assert row_text(buf, 0) == "x  [----] 0/0"
 
 
+def test_task_style_applies_to_whole_row():
+    buf = render(TaskList(lambda: [Task("done", style=ansi.GREEN)]), 40, 1)
+    assert row_text(buf, 0) == "done"
+    assert [cell_style(buf, x, 0) for x in range(4)] == [ansi.GREEN] * 4
+
+
 def test_title_occupies_first_row():
     buf = render(TaskList(lambda: [Task("a")], title="Tasks"), 40, 2)
     assert row_text(buf, 0) == "Tasks"
@@ -78,6 +89,15 @@ def test_tree_branch_glyphs():
     assert row_text(buf, 1) == "├─ src"
     assert row_text(buf, 2) == "│  └─ main.py"
     assert row_text(buf, 3) == "└─ README"
+
+
+def test_tree_colors_label_not_glyphs():
+    root = TreeNode("root", [TreeNode("src", style=ansi.GREEN)])
+    buf = render(Tree(lambda: root), 40, 2)
+    # branch glyphs stay unstyled; only the label carries the node's colour.
+    assert cell_style(buf, 0, 1) == ""            # "└" glyph
+    assert cell_style(buf, 3, 1) == ansi.GREEN    # "s" of "src"
+    assert row_text(buf, 1) == "└─ src"
 
 
 def test_tree_respects_collapsed():
@@ -223,9 +243,30 @@ def test_text_delete_last_and_first_clamp():
     t = Text(text=["a", "b", "c", "d"])
     t.delete_last(1)
     t.delete_first(1)
-    assert t._current() == ["b", "c"]
+    assert [line for line, _ in t._current()] == ["b", "c"]
     t.delete_last(99)          # clamps, empties without error
     assert t._current() == []
+
+
+def test_text_style_colors_all_pushed_lines():
+    t = Text()
+    t.append(["a", "b"], style=ansi.RED)
+    buf = render(t, 20, 2)
+    assert cell_style(buf, 0, 0) == ansi.RED
+    assert cell_style(buf, 0, 1) == ansi.RED
+
+
+def test_text_per_line_tuple_styles():
+    t = Text(text=[("warn", ansi.YELLOW), "plain"])
+    buf = render(t, 20, 2)
+    assert cell_style(buf, 0, 0) == ansi.YELLOW
+    assert cell_style(buf, 0, 1) == ""       # plain line keeps default style
+
+
+def test_text_pull_tuple_lines_carry_style():
+    buf = render(Text(lambda: [("hi", ansi.CYAN)]), 20, 1)
+    assert row_text(buf, 0) == "hi"
+    assert cell_style(buf, 0, 0) == ansi.CYAN
 
 
 def test_text_truncates_long_line_to_width():

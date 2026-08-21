@@ -8,11 +8,16 @@ from .base import Element, resolve
 
 @dataclass
 class TreeNode:
-    """A node in the tree. ``expanded`` controls whether children are shown."""
+    """A node in the tree. ``expanded`` controls whether children are shown.
+
+    ``style`` is an optional SGR prefix (e.g. ``ansi.GREEN``) applied to the
+    node's label; the branch glyphs stay in the default colour.
+    """
 
     label: str
     children: List["TreeNode"] = field(default_factory=list)
     expanded: bool = True
+    style: str = ""
 
 
 class Tree(Element):
@@ -49,26 +54,35 @@ class Tree(Element):
 
         row = rect.y
         bottom = rect.y + rect.height
-        for line in self._lines(roots, prefix="", is_root=True):
+        for glyphs, label, style in self._lines(roots, prefix="", is_root=True):
             if row >= bottom:
                 break
-            buf.text(rect.x, row, line, max_width=rect.width)
+            # Draw the branch glyphs unstyled, then the label in the node's
+            # colour so only the label is highlighted.
+            buf.text(rect.x, row, glyphs, max_width=rect.width)
+            glyph_w = len(glyphs)
+            if glyph_w < rect.width:
+                buf.text(
+                    rect.x + glyph_w, row, label,
+                    style=style, max_width=rect.width - glyph_w,
+                )
             row += 1
 
     def _lines(self, nodes, prefix, is_root):
-        """Yield rendered text lines for ``nodes``.
+        """Yield ``(glyphs, label, style)`` for each visible node.
 
-        ``prefix`` is the ancestor guide string; ``is_root`` suppresses branch
-        glyphs for the outermost level.
+        ``glyphs`` is the branch/guide prefix drawn before the label; ``style``
+        is the node's SGR prefix for its label. ``prefix`` is the ancestor guide
+        string; ``is_root`` suppresses branch glyphs for the outermost level.
         """
         last = len(nodes) - 1
         for i, node in enumerate(nodes):
             is_last = i == last
             if is_root:
-                yield node.label
+                yield "", node.label, node.style
                 child_prefix = prefix
             else:
-                yield prefix + ("└─ " if is_last else "├─ ") + node.label
+                yield prefix + ("└─ " if is_last else "├─ "), node.label, node.style
                 child_prefix = prefix + ("   " if is_last else "│  ")
             if node.children and node.expanded:
                 yield from self._lines(node.children, child_prefix, is_root=False)

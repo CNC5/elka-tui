@@ -6,7 +6,7 @@ provider function that is re-invoked every frame, so callers update the UI just
 by mutating whatever those functions read.
 """
 
-from . import keys
+from . import ansi, keys
 from .buffer import Buffer, Cell, Rect
 from .elements import (
     Element,
@@ -23,6 +23,7 @@ from .terminal import Terminal, terminal
 __all__ = [
     "Terminal",
     "terminal",
+    "ansi",
     "keys",
     "Element",
     "HorizontalSplit",

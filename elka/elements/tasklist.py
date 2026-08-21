@@ -9,11 +9,13 @@ from .base import Element, resolve
 @dataclass
 class Task:
     """One task row. ``current``/``total`` are optional; when both are set a
-    progress bar is drawn."""
+    progress bar is drawn. ``style`` is an optional SGR prefix (e.g.
+    ``ansi.GREEN``) applied to the whole row."""
 
     name: str
     current: Optional[int] = None
     total: Optional[int] = None
+    style: str = ""
 
     @property
     def has_progress(self):
@@ -51,7 +53,10 @@ class TaskList(Element):
         for task in resolve(self.provider):
             if row >= bottom:
                 break
-            buf.text(rect.x, row, self._format(task, rect.width), max_width=rect.width)
+            buf.text(
+                rect.x, row, self._format(task, rect.width),
+                style=task.style, max_width=rect.width,
+            )
             row += 1
 
     def _format(self, task, width):

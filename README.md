@@ -16,13 +16,14 @@ register.
   `ratio` may be a float or a `() -> float` provider. Nest for multi-pane
   layouts. Clicking a pane focuses it; see [Mouse & focus](#mouse--focus).
 - `TaskList(provider, title=None, bar_width=20)` — `provider() -> list[Task]`,
-  where `Task(name, current=None, total=None)` draws a progress bar when both
-  `current` and `total` are set.
+  where `Task(name, current=None, total=None, style="")` draws a progress bar
+  when both `current` and `total` are set; `style` colours the whole row.
 - `Tree(provider)` — `provider() -> TreeNode | list[TreeNode]`, where
-  `TreeNode(label, children=[], expanded=True)`.
-- `Text(provider=None, text=None)` — one line of text per row, truncated to the
-  region width. Either **pull** (pass `provider`) or **push** (drive it with
-  method calls). See [Text](#text).
+  `TreeNode(label, children=[], expanded=True, style="")`; `style` colours the
+  node's label (branch glyphs stay in the default colour).
+- `Text(provider=None, text=None, style="")` — one line of text per row,
+  truncated to the region width. Either **pull** (pass `provider`) or **push**
+  (drive it with method calls). Lines can be coloured. See [Text](#text).
 - `Scroll(child, offset=0)` — a movable vertical window into any element whose
   content is taller than its region. See [Scrolling](#scrolling).
 
@@ -82,6 +83,32 @@ log.delete_last()            # drop the newest (n=1 by default)
 Calling a push method while a `provider` is set raises `RuntimeError`. `Text`
 reports its `content_height`, so it scrolls inside a `Scroll` wrapper like
 `Tree` and `TaskList`.
+
+## Colour
+
+Colour is applied through **style** strings — raw SGR escape prefixes attached
+to cells. The `elka.ansi` module provides ready-to-use ones so you don't
+hand-write escapes: foreground colours `BLACK`, `RED`, `GREEN`, `YELLOW`, `BLUE`,
+`MAGENTA`, `CYAN`, `WHITE`; attributes `BOLD`, `DIM`, `ITALIC`, `UNDERLINE`; and
+`fg(n)` / `bg(n)` for 256-colour indices.
+
+```python
+from elka import Task, TaskList, Text, Tree, TreeNode, ansi
+
+# A task row, coloured by state.
+TaskList(lambda: [Task("build", 100, 100, style=ansi.GREEN)])
+
+# A tree node label (the ├─/└─ glyphs stay uncoloured).
+Tree(lambda: TreeNode("src", [TreeNode("main.py", style=ansi.CYAN)]))
+
+# Text: one colour for a whole call, or per line via (text, style) tuples.
+log = Text()
+log.append("connected", style=ansi.GREEN)
+log.append([("warning", ansi.YELLOW), ("error", ansi.RED)])
+```
+
+Any style string works, so `ansi.BOLD + ansi.RED` combines attributes, and you
+can pass your own SGR sequence built with `ansi.sgr(...)`.
 
 ## Scrolling
 
